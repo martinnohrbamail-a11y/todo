@@ -31,7 +31,14 @@ app.get("/api/items", async (req, res) => {
   try {
     const result = await pool.query(
       `
-      SELECT id, noresult_id, term, elnummer, COALESCE(behandlet, FALSE) AS behandlet
+      SELECT
+        id,
+        noresult_id,
+        term,
+        elnummer,
+        matched_longtekst,
+        longtekst_marked,
+        COALESCE(behandlet, FALSE) AS behandlet
       FROM noresult_matches
       WHERE COALESCE(behandlet, FALSE) = $1
       ORDER BY noresult_id, id
@@ -66,7 +73,14 @@ app.get("/api/next-group", async (_req, res) => {
     const { noresult_id } = nextGroupResult.rows[0];
     const rowsResult = await pool.query(
       `
-      SELECT id, noresult_id, term, elnummer, COALESCE(behandlet, FALSE) AS behandlet
+      SELECT
+        id,
+        noresult_id,
+        term,
+        elnummer,
+        matched_longtekst,
+        longtekst_marked,
+        COALESCE(behandlet, FALSE) AS behandlet
       FROM noresult_matches
       WHERE noresult_id = $1
       ORDER BY id

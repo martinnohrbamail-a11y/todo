@@ -18,6 +18,33 @@ function setStatus(message, isError = false) {
   statusEl.style.color = isError ? "#c62828" : "#1b5e20";
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function decorateLongtekst(markedText, matchedText) {
+  const safeMarked = escapeHtml(markedText);
+  const safeMatch = escapeHtml(matchedText);
+
+  if (!safeMarked) {
+    return "";
+  }
+
+  if (!safeMatch) {
+    return `<span class="highlighted-longtekst">${safeMarked}</span>`;
+  }
+
+  const pattern = new RegExp(safeMatch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+  const highlighted = safeMarked.replace(pattern, `<mark>$&</mark>`);
+
+  return `<span class="highlighted-longtekst">${highlighted}</span>`;
+}
+
 function groupByNoresultId(items) {
   const groups = new Map();
 
@@ -32,6 +59,18 @@ function groupByNoresultId(items) {
   return groups;
 }
 
+function rowTemplate(item, includeId = true) {
+  const noresultCell = includeId ? `<td>${escapeHtml(item.noresult_id)}</td>` : "";
+
+  return `
+    ${noresultCell}
+    <td>${escapeHtml(item.term)}</td>
+    <td>${escapeHtml(item.elnummer)}</td>
+    <td>${escapeHtml(item.matched_longtekst)}</td>
+    <td>${decorateLongtekst(item.longtekst_marked, item.matched_longtekst)}</td>
+  `;
+}
+
 function renderGroupedRows(tbody, items) {
   tbody.innerHTML = "";
   const groups = groupByNoresultId(items);
@@ -42,11 +81,7 @@ function renderGroupedRows(tbody, items) {
     const parentRow = document.createElement("tr");
     parentRow.className = "group-row";
 
-    parentRow.innerHTML = `
-      <td>${noresultId}</td>
-      <td>${first.term ?? ""}</td>
-      <td>${first.elnummer ?? ""}</td>
-    `;
+    parentRow.innerHTML = rowTemplate(first, true);
 
     if (groupItems.length > 1) {
       parentRow.classList.add("expandable");
@@ -56,7 +91,7 @@ function renderGroupedRows(tbody, items) {
       detailsRow.className = "details-row hidden";
 
       const detailsCell = document.createElement("td");
-      detailsCell.colSpan = 3;
+      detailsCell.colSpan = 5;
 
       const detailsList = document.createElement("div");
       detailsList.className = "details-list";
@@ -66,8 +101,10 @@ function renderGroupedRows(tbody, items) {
         .map(
           (item) => `
             <div class="detail-item">
-              <span class="detail-term">${item.term ?? ""}</span>
-              <span class="detail-el">${item.elnummer ?? ""}</span>
+              <span class="detail-term">${escapeHtml(item.term)}</span>
+              <span class="detail-el">${escapeHtml(item.elnummer)}</span>
+              <span class="detail-match">${escapeHtml(item.matched_longtekst)}</span>
+              <span class="detail-marked">${decorateLongtekst(item.longtekst_marked, item.matched_longtekst)}</span>
             </div>
           `
         )
@@ -97,8 +134,10 @@ function renderRows(items) {
     const tr = document.createElement("tr");
 
     tr.innerHTML = `
-      <td>${item.term ?? ""}</td>
-      <td>${item.elnummer ?? ""}</td>
+      <td>${escapeHtml(item.term)}</td>
+      <td>${escapeHtml(item.elnummer)}</td>
+      <td>${escapeHtml(item.matched_longtekst)}</td>
+      <td>${decorateLongtekst(item.longtekst_marked, item.matched_longtekst)}</td>
       <td>
         <label>
           <input type="checkbox" data-row-id="${item.id}" ${item.behandlet ? "checked" : ""} />

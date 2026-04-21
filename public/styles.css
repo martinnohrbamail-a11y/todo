@@ -74,6 +74,23 @@ td {
   border: 1px solid #dde2ef;
   padding: 10px;
   text-align: left;
+  vertical-align: top;
+}
+
+.highlighted-longtekst {
+  color: #4a148c;
+  background: #f5ebff;
+  border-radius: 4px;
+  padding: 2px 4px;
+  display: inline-block;
+  max-width: 340px;
+  word-break: break-word;
+}
+
+mark {
+  background: #fff176;
+  color: #1a1a1a;
+  padding: 0 2px;
 }
 
 .group-row.expandable {
@@ -105,7 +122,7 @@ td {
 
 .detail-item {
   display: grid;
-  grid-template-columns: 1fr 180px;
+  grid-template-columns: minmax(120px, 1fr) 120px minmax(120px, 1fr) minmax(220px, 2fr);
   gap: 12px;
   border-bottom: 1px dashed #d8deed;
   padding-bottom: 4px;
