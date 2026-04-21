@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Noresult To-Do</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Noresult To-Do</h1>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="workTab">Arbeidsfane (ikke behandlet)</button>
+        <button class="tab" data-tab="doneTab">Ferdig behandlet</button>
+      </div>
+
+      <section id="workTab" class="tab-panel active">
+        <p id="groupInfo">Trykk «Hent neste» for å starte.</p>
+
+        <div class="actions top-actions">
+          <button id="fetchNextBtn">Hent neste</button>
+          <button id="markAllBtn" disabled>Marker alle behandlet</button>
+        </div>
+
+        <h3>Aktiv gruppe</h3>
+        <table id="todoTable">
+          <thead>
+            <tr>
+              <th>Term</th>
+              <th>Elnummer</th>
+              <th>Behandlet</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <div class="actions">
+          <button id="completeBtn" disabled>Fullfør</button>
+        </div>
+
+        <h3>Alle ubehandlede søkeord</h3>
+        <table id="pendingTable">
+          <thead>
+            <tr>
+              <th>Noresult ID</th>
+              <th>Term</th>
+              <th>Elnummer</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <section id="doneTab" class="tab-panel">
+        <p>Oversikt over alle behandlete søkeord.</p>
+        <table id="doneTable">
+          <thead>
+            <tr>
+              <th>Noresult ID</th>
+              <th>Term</th>
+              <th>Elnummer</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <p id="status"></p>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
