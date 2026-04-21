@@ -64,9 +64,19 @@ button:disabled {
 
 table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   margin-top: 8px;
   margin-bottom: 20px;
+}
+
+
+
+.text-wrap {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+  max-width: 100%;
 }
 
 th,
@@ -75,6 +85,8 @@ td {
   padding: 10px;
   text-align: left;
   vertical-align: top;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .highlighted-longtekst {
@@ -83,7 +95,7 @@ td {
   border-radius: 4px;
   padding: 2px 4px;
   display: inline-block;
-  max-width: 340px;
+  max-width: 100%;
   word-break: break-word;
 }
 

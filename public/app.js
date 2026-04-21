@@ -27,22 +27,30 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-function decorateLongtekst(markedText, matchedText) {
-  const safeMarked = escapeHtml(markedText);
-  const safeMatch = escapeHtml(matchedText);
+function decorateLongtekst(markedText, _matchedText) {
+  const rawText = String(markedText ?? "");
 
-  if (!safeMarked) {
+  if (!rawText) {
     return "";
   }
 
-  if (!safeMatch) {
-    return `<span class="highlighted-longtekst">${safeMarked}</span>`;
+  const markerRegex = /\[\[(.*?)\]\]/g;
+  let cursor = 0;
+  let result = "";
+
+  for (const match of rawText.matchAll(markerRegex)) {
+    const fullMatch = match[0];
+    const innerText = match[1] ?? "";
+    const startIndex = match.index ?? 0;
+
+    result += escapeHtml(rawText.slice(cursor, startIndex));
+    result += `<mark>${escapeHtml(innerText)}</mark>`;
+    cursor = startIndex + fullMatch.length;
   }
 
-  const pattern = new RegExp(safeMatch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
-  const highlighted = safeMarked.replace(pattern, `<mark>$&</mark>`);
+  result += escapeHtml(rawText.slice(cursor));
 
-  return `<span class="highlighted-longtekst">${highlighted}</span>`;
+  return `<span class="highlighted-longtekst">${result}</span>`;
 }
 
 function groupByNoresultId(items) {
@@ -66,8 +74,8 @@ function rowTemplate(item, includeId = true) {
     ${noresultCell}
     <td>${escapeHtml(item.term)}</td>
     <td>${escapeHtml(item.elnummer)}</td>
-    <td>${escapeHtml(item.matched_longtekst)}</td>
-    <td>${decorateLongtekst(item.longtekst_marked, item.matched_longtekst)}</td>
+    <td><div class="text-wrap">${escapeHtml(item.matched_longtekst)}</div></td>
+    <td><div class="text-wrap">${decorateLongtekst(item.longtekst_marked, item.matched_longtekst)}</div></td>
   `;
 }
 
@@ -103,8 +111,8 @@ function renderGroupedRows(tbody, items) {
             <div class="detail-item">
               <span class="detail-term">${escapeHtml(item.term)}</span>
               <span class="detail-el">${escapeHtml(item.elnummer)}</span>
-              <span class="detail-match">${escapeHtml(item.matched_longtekst)}</span>
-              <span class="detail-marked">${decorateLongtekst(item.longtekst_marked, item.matched_longtekst)}</span>
+              <span class="detail-match text-wrap">${escapeHtml(item.matched_longtekst)}</span>
+              <span class="detail-marked text-wrap">${decorateLongtekst(item.longtekst_marked, item.matched_longtekst)}</span>
             </div>
           `
         )
@@ -136,8 +144,8 @@ function renderRows(items) {
     tr.innerHTML = `
       <td>${escapeHtml(item.term)}</td>
       <td>${escapeHtml(item.elnummer)}</td>
-      <td>${escapeHtml(item.matched_longtekst)}</td>
-      <td>${decorateLongtekst(item.longtekst_marked, item.matched_longtekst)}</td>
+      <td><div class="text-wrap">${escapeHtml(item.matched_longtekst)}</div></td>
+      <td><div class="text-wrap">${decorateLongtekst(item.longtekst_marked, item.matched_longtekst)}</div></td>
       <td>
         <label>
           <input type="checkbox" data-row-id="${item.id}" ${item.behandlet ? "checked" : ""} />
