@@ -18,17 +18,75 @@ function setStatus(message, isError = false) {
   statusEl.style.color = isError ? "#c62828" : "#1b5e20";
 }
 
-function renderSimpleRows(tbody, items) {
-  tbody.innerHTML = "";
+function groupByNoresultId(items) {
+  const groups = new Map();
 
   for (const item of items) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${item.noresult_id ?? ""}</td>
-      <td>${item.term ?? ""}</td>
-      <td>${item.elnummer ?? ""}</td>
+    const key = String(item.noresult_id);
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+    groups.get(key).push(item);
+  }
+
+  return groups;
+}
+
+function renderGroupedRows(tbody, items) {
+  tbody.innerHTML = "";
+  const groups = groupByNoresultId(items);
+
+  for (const [noresultId, groupItems] of groups) {
+    const first = groupItems[0];
+
+    const parentRow = document.createElement("tr");
+    parentRow.className = "group-row";
+
+    parentRow.innerHTML = `
+      <td>${noresultId}</td>
+      <td>${first.term ?? ""}</td>
+      <td>${first.elnummer ?? ""}</td>
     `;
-    tbody.appendChild(tr);
+
+    if (groupItems.length > 1) {
+      parentRow.classList.add("expandable");
+      parentRow.title = "Klikk for å vise/skjule flere elnummer";
+
+      const detailsRow = document.createElement("tr");
+      detailsRow.className = "details-row hidden";
+
+      const detailsCell = document.createElement("td");
+      detailsCell.colSpan = 3;
+
+      const detailsList = document.createElement("div");
+      detailsList.className = "details-list";
+
+      detailsList.innerHTML = groupItems
+        .slice(1)
+        .map(
+          (item) => `
+            <div class="detail-item">
+              <span class="detail-term">${item.term ?? ""}</span>
+              <span class="detail-el">${item.elnummer ?? ""}</span>
+            </div>
+          `
+        )
+        .join("");
+
+      detailsCell.appendChild(detailsList);
+      detailsRow.appendChild(detailsCell);
+
+      parentRow.addEventListener("click", () => {
+        const isHidden = detailsRow.classList.contains("hidden");
+        detailsRow.classList.toggle("hidden", !isHidden);
+        parentRow.classList.toggle("expanded", isHidden);
+      });
+
+      tbody.appendChild(parentRow);
+      tbody.appendChild(detailsRow);
+    } else {
+      tbody.appendChild(parentRow);
+    }
   }
 }
 
@@ -61,7 +119,7 @@ async function loadList(behandlet, tbody) {
   const response = await fetch(`/api/items?behandlet=${behandlet}`);
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || "Ukjent feil");
-  renderSimpleRows(tbody, data.items);
+  renderGroupedRows(tbody, data.items);
 }
 
 async function refreshLists() {

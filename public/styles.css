@@ -76,6 +76,45 @@ td {
   text-align: left;
 }
 
+.group-row.expandable {
+  cursor: pointer;
+  background: #f8fbff;
+}
+
+.group-row.expandable td:first-child::after {
+  content: " ▸";
+  color: #456;
+}
+
+.group-row.expandable.expanded td:first-child::after {
+  content: " ▾";
+}
+
+.details-row.hidden {
+  display: none;
+}
+
+.details-row td {
+  background: #fbfcff;
+}
+
+.details-list {
+  display: grid;
+  gap: 6px;
+}
+
+.detail-item {
+  display: grid;
+  grid-template-columns: 1fr 180px;
+  gap: 12px;
+  border-bottom: 1px dashed #d8deed;
+  padding-bottom: 4px;
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
 #status {
   min-height: 24px;
   font-weight: 600;
