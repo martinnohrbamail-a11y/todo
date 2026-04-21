@@ -5,7 +5,7 @@ body {
 }
 
 .container {
-  max-width: 900px;
+  max-width: 1000px;
   margin: 32px auto;
   background: white;
   border-radius: 10px;
@@ -13,8 +13,33 @@ body {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
 }
 
-h1 {
+h1, h3 {
   margin-top: 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tab {
+  border: 1px solid #c7d2ea;
+  background: #edf2ff;
+  color: #1a2a4a;
+}
+
+.tab.active {
+  background: #0d47a1;
+  color: #fff;
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
 }
 
 .actions {
@@ -41,6 +66,7 @@ table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 8px;
+  margin-bottom: 20px;
 }
 
 th,

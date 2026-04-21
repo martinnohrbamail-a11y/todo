@@ -25,6 +25,27 @@ app.get("/api/health", async (_req, res) => {
   }
 });
 
+app.get("/api/items", async (req, res) => {
+  const behandlet = req.query.behandlet === "true";
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT id, noresult_id, term, elnummer, COALESCE(behandlet, FALSE) AS behandlet
+      FROM noresult_matches
+      WHERE COALESCE(behandlet, FALSE) = $1
+      ORDER BY noresult_id, id
+      `,
+      [behandlet]
+    );
+
+    res.json({ items: result.rows });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Klarte ikke hente liste" });
+  }
+});
+
 app.get("/api/next-group", async (_req, res) => {
   try {
     const nextGroupResult = await pool.query(

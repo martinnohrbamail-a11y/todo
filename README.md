@@ -6,6 +6,21 @@ En enkel app for arbeidsflyten du beskrev:
 2. Markere enkeltlinjer eller alle som behandlet.
 3. Klikke **Fullfør** for å oppdatere NeonDB.
 4. Automatisk hente neste gruppe.
+5. Bytte mellom faner for å se **ubehandlede** og **behandlede** søkeord.
+
+## Faner i UI
+
+- **Arbeidsfane (ikke behandlet)**
+  - Viser aktiv gruppe for behandling.
+  - Viser også full liste over alle ubehandlede søkeord.
+- **Ferdig behandlet**
+  - Viser full liste over alle ferdigbehandlede søkeord.
+
+## API
+
+- `GET /api/next-group`: Henter neste ubehandlede gruppe (`noresult_id`).
+- `POST /api/mark-complete`: Oppdaterer valgte rader til `behandlet = TRUE`.
+- `GET /api/items?behandlet=true|false`: Henter full liste for valgt status.
 
 ## Forventet tabell
 
