@@ -27,22 +27,30 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-function decorateLongtekst(markedText, matchedText) {
-  const safeMarked = escapeHtml(markedText);
-  const safeMatch = escapeHtml(matchedText);
+function decorateLongtekst(markedText, _matchedText) {
+  const rawText = String(markedText ?? "");
 
-  if (!safeMarked) {
+  if (!rawText) {
     return "";
   }
 
-  if (!safeMatch) {
-    return `<span class="highlighted-longtekst">${safeMarked}</span>`;
+  const markerRegex = /\[\[(.*?)\]\]/g;
+  let cursor = 0;
+  let result = "";
+
+  for (const match of rawText.matchAll(markerRegex)) {
+    const fullMatch = match[0];
+    const innerText = match[1] ?? "";
+    const startIndex = match.index ?? 0;
+
+    result += escapeHtml(rawText.slice(cursor, startIndex));
+    result += `<mark>${escapeHtml(innerText)}</mark>`;
+    cursor = startIndex + fullMatch.length;
   }
 
-  const pattern = new RegExp(safeMatch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
-  const highlighted = safeMarked.replace(pattern, `<mark>$&</mark>`);
+  result += escapeHtml(rawText.slice(cursor));
 
-  return `<span class="highlighted-longtekst">${highlighted}</span>`;
+  return `<span class="highlighted-longtekst">${result}</span>`;
 }
 
 function groupByNoresultId(items) {
