@@ -8,7 +8,6 @@ const groupInfo = document.getElementById("groupInfo");
 const statusEl = document.getElementById("status");
 
 const todoTbody = document.querySelector("#todoTable tbody");
-const pendingTbody = document.querySelector("#pendingTable tbody");
 const doneTbody = document.querySelector("#doneTable tbody");
 
 let currentGroupId = null;
@@ -171,7 +170,7 @@ async function loadList(behandlet, tbody) {
 
 async function refreshLists() {
   try {
-    await Promise.all([loadList(false, pendingTbody), loadList(true, doneTbody)]);
+    await loadList(true, doneTbody);
   } catch (error) {
     setStatus(`Feil ved henting av lister: ${error.message}`, true);
   }
