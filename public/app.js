@@ -26,7 +26,7 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-function decorateLongtekst(markedText, _matchedText) {
+function decorateLongtekst(markedText) {
   const rawText = String(markedText ?? "");
 
   if (!rawText) {
@@ -73,8 +73,7 @@ function rowTemplate(item, includeId = true) {
     ${noresultCell}
     <td>${escapeHtml(item.term)}</td>
     <td>${escapeHtml(item.elnummer)}</td>
-    <td><div class="text-wrap">${escapeHtml(item.matched_longtekst)}</div></td>
-    <td><div class="text-wrap">${decorateLongtekst(item.longtekst_marked, item.matched_longtekst)}</div></td>
+    <td><div class="text-wrap">${decorateLongtekst(item.longtekst_marked)}</div></td>
   `;
 }
 
@@ -82,7 +81,7 @@ function renderGroupedRows(tbody, items) {
   tbody.innerHTML = "";
   const groups = groupByNoresultId(items);
 
-  for (const [noresultId, groupItems] of groups) {
+  for (const [_noresultId, groupItems] of groups) {
     const first = groupItems[0];
 
     const parentRow = document.createElement("tr");
@@ -98,7 +97,7 @@ function renderGroupedRows(tbody, items) {
       detailsRow.className = "details-row hidden";
 
       const detailsCell = document.createElement("td");
-      detailsCell.colSpan = 5;
+      detailsCell.colSpan = 4;
 
       const detailsList = document.createElement("div");
       detailsList.className = "details-list";
@@ -110,8 +109,7 @@ function renderGroupedRows(tbody, items) {
             <div class="detail-item">
               <span class="detail-term">${escapeHtml(item.term)}</span>
               <span class="detail-el">${escapeHtml(item.elnummer)}</span>
-              <span class="detail-match text-wrap">${escapeHtml(item.matched_longtekst)}</span>
-              <span class="detail-marked text-wrap">${decorateLongtekst(item.longtekst_marked, item.matched_longtekst)}</span>
+              <span class="detail-marked text-wrap">${decorateLongtekst(item.longtekst_marked)}</span>
             </div>
           `
         )
@@ -143,8 +141,7 @@ function renderRows(items) {
     tr.innerHTML = `
       <td>${escapeHtml(item.term)}</td>
       <td>${escapeHtml(item.elnummer)}</td>
-      <td><div class="text-wrap">${escapeHtml(item.matched_longtekst)}</div></td>
-      <td><div class="text-wrap">${decorateLongtekst(item.longtekst_marked, item.matched_longtekst)}</div></td>
+      <td><div class="text-wrap">${decorateLongtekst(item.longtekst_marked)}</div></td>
       <td>
         <label>
           <input type="checkbox" data-row-id="${item.id}" ${item.behandlet ? "checked" : ""} />
