@@ -3,6 +3,8 @@ const tabPanels = document.querySelectorAll(".tab-panel");
 
 const fetchNextBtn = document.getElementById("fetchNextBtn");
 const markAllBtn = document.getElementById("markAllBtn");
+const copyAllBtn = document.getElementById("copyAllBtn");
+const copySelectedBtn = document.getElementById("copySelectedBtn");
 const completeBtn = document.getElementById("completeBtn");
 const groupInfo = document.getElementById("groupInfo");
 const statusEl = document.getElementById("status");
@@ -144,6 +146,16 @@ function renderRows(items) {
       <td><div class="text-wrap">${decorateLongtekst(item.longtekst_marked)}</div></td>
       <td>
         <label>
+          <input
+            type="checkbox"
+            class="copy-checkbox"
+            data-elnummer="${escapeHtml(item.elnummer)}"
+          />
+          Velg
+        </label>
+      </td>
+      <td>
+        <label>
           <input type="checkbox" data-row-id="${item.id}" ${item.behandlet ? "checked" : ""} />
           Ferdig
         </label>
@@ -155,6 +167,8 @@ function renderRows(items) {
 
   const hasRows = items.length > 0;
   markAllBtn.disabled = !hasRows;
+  copyAllBtn.disabled = !hasRows;
+  copySelectedBtn.disabled = !hasRows;
   completeBtn.disabled = !hasRows;
 }
 
@@ -205,6 +219,39 @@ function markAllChecked() {
   checkboxes.forEach((checkbox) => {
     checkbox.checked = true;
   });
+}
+
+function getElnummerToCopy(onlySelected = false) {
+  const selector = onlySelected
+    ? "input.copy-checkbox:checked"
+    : "input.copy-checkbox";
+
+  return Array.from(todoTbody.querySelectorAll(selector))
+    .map((checkbox) => checkbox.dataset.elnummer)
+    .filter((value) => value && value.trim().length > 0);
+}
+
+async function copyElnummer(onlySelected = false) {
+  const elnummerList = getElnummerToCopy(onlySelected);
+
+  if (elnummerList.length === 0) {
+    setStatus(
+      onlySelected
+        ? "Ingen elnummer valgt for kopiering."
+        : "Ingen elnummer å kopiere i aktiv gruppe.",
+      true
+    );
+    return;
+  }
+
+  const copyText = elnummerList.join(" ");
+
+  try {
+    await navigator.clipboard.writeText(copyText);
+    setStatus(`Kopierte ${elnummerList.length} elnummer.`);
+  } catch (_error) {
+    setStatus("Klarte ikke kopiere til utklippstavle.", true);
+  }
 }
 
 async function completeSelected() {
@@ -262,5 +309,7 @@ function setupTabs() {
 setupTabs();
 fetchNextBtn.addEventListener("click", fetchNextGroup);
 markAllBtn.addEventListener("click", markAllChecked);
+copyAllBtn.addEventListener("click", () => copyElnummer(false));
+copySelectedBtn.addEventListener("click", () => copyElnummer(true));
 completeBtn.addEventListener("click", completeSelected);
 refreshLists();
