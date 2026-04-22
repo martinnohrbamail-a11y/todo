@@ -54,3 +54,14 @@ npm start
 ```
 
 Appen kjører på `http://localhost:3000`.
+
+
+## Feilsøking ved "Klarte ikke hente neste gruppe"
+
+Hvis du har opprettet databasen på nytt, sjekk at:
+
+- `DATABASE_URL` peker til riktig database.
+- `TABLE_NAME` peker til riktig tabell (default `public.noresult_matches`).
+- Tabellen har kolonnene: `id`, `noresult_id`, `term`, `elnummer`, `behandlet`, `matched_longtekst`, `longtekst_marked`.
+
+API-feil returnerer nå også `detail` og `code` fra Postgres for enklere feilsøking.
