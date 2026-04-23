@@ -17,6 +17,10 @@ let currentGroupId = null;
 let currentGroupItems = [];
 let aiScoresByRowId = new Map();
 
+function rowKey(value) {
+  return String(value ?? "");
+}
+
 function setStatus(message, isError = false) {
   statusEl.textContent = message;
   statusEl.style.color = isError ? "#c62828" : "#1b5e20";
@@ -143,7 +147,7 @@ function renderRows(items) {
 
   for (const item of items) {
     const tr = document.createElement("tr");
-    const ai = aiScoresByRowId.get(item.id);
+    const ai = aiScoresByRowId.get(rowKey(item.id));
     const scoreValue = Number.isFinite(ai?.score) ? ai.score : "—";
     const scoreReason = ai?.begrunnelse || "Kjør AI-score for å få begrunnelse.";
 
@@ -300,10 +304,16 @@ async function scoreActiveGroupWithAi() {
 
     aiScoresByRowId = new Map(
       (data.results || []).map((item) => [
-        item.rowId,
+        rowKey(item.rowId),
         { score: item.score, begrunnelse: item.begrunnelse },
       ])
     );
+
+    if (aiScoresByRowId.size === 0) {
+      setStatus("AI-vurdering fullført, men ingen score ble returnert.", true);
+      return;
+    }
+
     renderRows(currentGroupItems);
     setStatus("AI-vurdering fullført.");
   } catch (error) {

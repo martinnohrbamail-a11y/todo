@@ -128,7 +128,7 @@ Hold samme rekkefølge som input.
 
   const results = Array.isArray(parsed.results) ? parsed.results : [];
   return results.map((item, index) => ({
-    rowId: rows[index]?.id ?? null,
+    rowId: String(rows[index]?.id ?? ""),
     elnummer: String(item.elnummer ?? rows[index]?.elnummer ?? ""),
     score: Math.max(0, Math.min(100, Number(item.score) || 0)),
     begrunnelse: String(item.begrunnelse ?? ""),
@@ -141,6 +141,57 @@ app.get("/api/health", async (_req, res) => {
     res.json({ ok: true, table: tableNameInput });
   } catch (error) {
     res.status(500).json(dbError(error, "Database unavailable"));
+  }
+});
+
+app.get("/api/schema-check", async (_req, res) => {
+  try {
+    const [schemaPart, tablePart] = tableNameInput.includes(".")
+      ? tableNameInput.split(".")
+      : ["public", tableNameInput];
+
+    const columnsResult = await pool.query(
+      `
+      SELECT column_name, data_type
+      FROM information_schema.columns
+      WHERE table_schema = $1
+        AND table_name = $2
+      `,
+      [schemaPart, tablePart]
+    );
+
+    const actualColumns = new Map(
+      columnsResult.rows.map((row) => [row.column_name, row.data_type])
+    );
+
+    const required = [
+      { name: "id", types: ["integer", "bigint", "uuid"] },
+      { name: "noresult_id", types: ["integer", "bigint", "text", "character varying"] },
+      { name: "term", types: ["text", "character varying"] },
+      { name: "elnummer", types: ["text", "character varying"] },
+      { name: "longtekst_marked", types: ["text", "character varying"] },
+      { name: "behandlet", types: ["boolean"] },
+    ];
+
+    const checks = required.map((col) => {
+      const actualType = actualColumns.get(col.name);
+      return {
+        column: col.name,
+        exists: Boolean(actualType),
+        type: actualType || null,
+        expectedTypes: col.types,
+        typeOk: actualType ? col.types.includes(actualType) : false,
+      };
+    });
+
+    const ok = checks.every((check) => check.exists && check.typeOk);
+    return res.json({
+      ok,
+      table: tableNameInput,
+      checks,
+    });
+  } catch (error) {
+    return res.status(500).json(dbError(error, "Klarte ikke kjøre schema-check"));
   }
 });
 
@@ -252,7 +303,7 @@ app.post("/api/ai-score", async (req, res) => {
 
   try {
     const normalizedRows = rows.map((row) => ({
-      id: Number.isFinite(Number(row.id)) ? Number(row.id) : null,
+      id: String(row.id ?? ""),
       term: String(row.term ?? ""),
       elnummer: String(row.elnummer ?? ""),
       longtekst_marked: String(row.longtekst_marked ?? ""),

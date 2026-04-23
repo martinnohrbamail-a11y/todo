@@ -22,6 +22,7 @@ En enkel app for arbeidsflyten du beskrev:
 - `POST /api/mark-complete`: Oppdaterer valgte rader til `behandlet = TRUE`.
 - `GET /api/items?behandlet=true|false`: Henter full liste for valgt status.
 - `POST /api/ai-score`: AI-vurderer rader og returnerer `elnummer`, `score` og kort `begrunnelse`.
+- `GET /api/schema-check`: Verifiserer at nødvendige kolonner finnes med riktige datatyper.
 
 ## Forventet tabell
 
@@ -67,6 +68,19 @@ Hvis du har opprettet databasen på nytt, sjekk at:
 - Tabellen har kolonnene: `id`, `noresult_id`, `term`, `elnummer`, `behandlet`, `matched_longtekst`, `longtekst_marked`.
 
 API-feil returnerer nå også `detail` og `code` fra Postgres for enklere feilsøking.
+
+Du kan også kjøre:
+
+```bash
+curl http://localhost:3000/api/schema-check
+```
+
+Hvis `behandlet` mangler, opprett den med:
+
+```sql
+ALTER TABLE public.noresult_matches
+ADD COLUMN IF NOT EXISTS behandlet boolean NOT NULL DEFAULT false;
+```
 
 ## AI-vurdering (Copilot / OpenAI)
 
