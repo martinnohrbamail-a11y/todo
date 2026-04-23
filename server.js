@@ -38,6 +38,102 @@ function dbError(error, fallbackMessage) {
   };
 }
 
+async function scoreRowsWithAI(rows) {
+  const provider = (process.env.AI_PROVIDER || "openai").toLowerCase();
+  const isCopilot = provider === "copilot";
+  const apiKey = isCopilot
+    ? process.env.COPILOT_API_KEY || process.env.GITHUB_TOKEN
+    : process.env.OPENAI_API_KEY;
+  const model = isCopilot
+    ? process.env.COPILOT_MODEL || "gpt-4o-mini"
+    : process.env.OPENAI_MODEL || "gpt-4.1-mini";
+  const baseUrl = isCopilot
+    ? process.env.COPILOT_BASE_URL || "https://models.inference.ai.azure.com"
+    : "https://api.openai.com";
+
+  if (!apiKey) {
+    throw new Error(
+      isCopilot
+        ? "COPILOT_API_KEY (eller GITHUB_TOKEN) mangler i miljøvariabler"
+        : "OPENAI_API_KEY mangler i miljøvariabler"
+    );
+  }
+
+  const instructions = `
+Du skal analysere en tabell rad for rad.
+Felter per rad:
+- term
+- elnummer
+- longtekst_marked
+
+Vurder hvor godt longtekst_marked matcher det brukeren leter etter i term.
+Vær streng. Ved usikkerhet: trekk score ned.
+Hvis ord matcher, men produkttype er feil: svært lav score eller 0.
+Bedre for lav enn for høy score.
+
+Scoringsregler:
+- 100: svært tydelig og direkte match
+- 80-99: veldig god match med liten usikkerhet
+- 50-79: delvis relevant
+- 1-49: svak match
+- 0: feil produkt
+
+Returner KUN gyldig JSON på format:
+{
+  "results": [
+    { "elnummer": "...", "score": 0-100, "begrunnelse": "kort og konkret" }
+  ]
+}
+
+Hold samme rekkefølge som input.
+`;
+
+  const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: instructions },
+        {
+          role: "user",
+          content: JSON.stringify({ rows }),
+        },
+      ],
+    }),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    const detail = payload?.error?.message || "Ukjent AI-feil";
+    throw new Error(`AI-feil (${provider}): ${detail}`);
+  }
+
+  const content = payload.choices?.[0]?.message?.content;
+  if (!content) {
+    throw new Error(`Tomt svar fra AI-provider (${provider})`);
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(content);
+  } catch (_error) {
+    throw new Error(`Klarte ikke parse JSON fra AI-provider (${provider})`);
+  }
+
+  const results = Array.isArray(parsed.results) ? parsed.results : [];
+  return results.map((item, index) => ({
+    elnummer: String(item.elnummer ?? rows[index]?.elnummer ?? ""),
+    score: Math.max(0, Math.min(100, Number(item.score) || 0)),
+    begrunnelse: String(item.begrunnelse ?? ""),
+  }));
+}
+
 app.get("/api/health", async (_req, res) => {
   try {
     await pool.query("SELECT 1");
@@ -139,6 +235,32 @@ app.post("/api/mark-complete", async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json(dbError(error, "Klarte ikke oppdatere status"));
+  }
+});
+
+app.post("/api/ai-score", async (req, res) => {
+  const rows = req.body?.rows;
+
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return res.status(400).json({ error: "Mangler rows for AI-vurdering" });
+  }
+
+  if (rows.length > 200) {
+    return res.status(400).json({ error: "Maks 200 rader per AI-kall" });
+  }
+
+  try {
+    const normalizedRows = rows.map((row) => ({
+      term: String(row.term ?? ""),
+      elnummer: String(row.elnummer ?? ""),
+      longtekst_marked: String(row.longtekst_marked ?? ""),
+    }));
+
+    const results = await scoreRowsWithAI(normalizedRows);
+    return res.json({ results });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json(dbError(error, "Klarte ikke kjøre AI-vurdering"));
   }
 });
 

@@ -21,6 +21,7 @@ En enkel app for arbeidsflyten du beskrev:
 - `GET /api/next-group`: Henter neste ubehandlede gruppe (`noresult_id`).
 - `POST /api/mark-complete`: Oppdaterer valgte rader til `behandlet = TRUE`.
 - `GET /api/items?behandlet=true|false`: Henter full liste for valgt status.
+- `POST /api/ai-score`: AI-vurderer rader og returnerer `elnummer`, `score` og kort `begrunnelse`.
 
 ## Forventet tabell
 
@@ -49,6 +50,7 @@ CREATE TABLE noresult_matches (
 ```bash
 cp .env.example .env
 # sett DATABASE_URL til Neon connection string
+# sett OPENAI_API_KEY for AI-vurdering
 npm install
 npm start
 ```
@@ -65,3 +67,21 @@ Hvis du har opprettet databasen på nytt, sjekk at:
 - Tabellen har kolonnene: `id`, `noresult_id`, `term`, `elnummer`, `behandlet`, `matched_longtekst`, `longtekst_marked`.
 
 API-feil returnerer nå også `detail` og `code` fra Postgres for enklere feilsøking.
+
+## AI-vurdering (Copilot / OpenAI)
+
+Arbeidsfanen har en knapp **AI-score aktiv gruppe** som sender aktiv gruppe til backend.  
+Backend kaller valgfri AI-provider med streng vurderingslogikk og returnerer:
+
+- Elnummer
+- Score (0-100)
+- Begrunnelse (kort)
+
+Miljøvariabler:
+
+- `AI_PROVIDER` (`openai` eller `copilot`, default `openai`)
+- `OPENAI_API_KEY` (påkrevd når `AI_PROVIDER=openai`)
+- `OPENAI_MODEL` (valgfri, default `gpt-4.1-mini`)
+- `COPILOT_API_KEY` eller `GITHUB_TOKEN` (påkrevd når `AI_PROVIDER=copilot`)
+- `COPILOT_MODEL` (valgfri, default `gpt-4o-mini`)
+- `COPILOT_BASE_URL` (valgfri, default `https://models.inference.ai.azure.com`)

@@ -191,3 +191,7 @@ mark {
   min-height: 24px;
   font-weight: 600;
 }
+
+.ai-results {
+  margin-top: 20px;
+}

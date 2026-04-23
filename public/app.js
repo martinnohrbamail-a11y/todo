@@ -5,14 +5,17 @@ const fetchNextBtn = document.getElementById("fetchNextBtn");
 const markAllBtn = document.getElementById("markAllBtn");
 const copyAllBtn = document.getElementById("copyAllBtn");
 const copySelectedBtn = document.getElementById("copySelectedBtn");
+const aiScoreBtn = document.getElementById("aiScoreBtn");
 const completeBtn = document.getElementById("completeBtn");
 const groupInfo = document.getElementById("groupInfo");
 const statusEl = document.getElementById("status");
+const aiResultsEl = document.getElementById("aiResults");
 
 const todoTbody = document.querySelector("#todoTable tbody");
 const doneTbody = document.querySelector("#doneTable tbody");
 
 let currentGroupId = null;
+let currentGroupItems = [];
 
 function setStatus(message, isError = false) {
   statusEl.textContent = message;
@@ -136,6 +139,8 @@ function renderGroupedRows(tbody, items) {
 
 function renderRows(items) {
   todoTbody.innerHTML = "";
+  currentGroupItems = items;
+  aiResultsEl.innerHTML = "";
 
   for (const item of items) {
     const tr = document.createElement("tr");
@@ -156,7 +161,12 @@ function renderRows(items) {
       </td>
       <td>
         <label>
-          <input type="checkbox" data-row-id="${item.id}" ${item.behandlet ? "checked" : ""} />
+          <input
+            type="checkbox"
+            class="complete-checkbox"
+            data-row-id="${item.id}"
+            ${item.behandlet ? "checked" : ""}
+          />
           Ferdig
         </label>
       </td>
@@ -169,6 +179,7 @@ function renderRows(items) {
   markAllBtn.disabled = !hasRows;
   copyAllBtn.disabled = !hasRows;
   copySelectedBtn.disabled = !hasRows;
+  aiScoreBtn.disabled = !hasRows;
   completeBtn.disabled = !hasRows;
 }
 
@@ -215,7 +226,7 @@ async function fetchNextGroup() {
 }
 
 function markAllChecked() {
-  const checkboxes = todoTbody.querySelectorAll("input[type='checkbox']");
+  const checkboxes = todoTbody.querySelectorAll("input.complete-checkbox");
   checkboxes.forEach((checkbox) => {
     checkbox.checked = true;
   });
@@ -254,6 +265,77 @@ async function copyElnummer(onlySelected = false) {
   }
 }
 
+function renderAiResults(results) {
+  aiResultsEl.innerHTML = "";
+
+  if (!Array.isArray(results) || results.length === 0) {
+    aiResultsEl.innerHTML = "<p>Ingen AI-resultater å vise.</p>";
+    return;
+  }
+
+  const rows = results
+    .map(
+      (item) => `
+        <tr>
+          <td>${escapeHtml(item.elnummer)}</td>
+          <td>${escapeHtml(item.score)}</td>
+          <td>${escapeHtml(item.begrunnelse)}</td>
+        </tr>
+      `
+    )
+    .join("");
+
+  aiResultsEl.innerHTML = `
+    <h3>AI-vurdering</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Elnummer</th>
+          <th>Score</th>
+          <th>Begrunnelse</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+async function scoreActiveGroupWithAi() {
+  if (!Array.isArray(currentGroupItems) || currentGroupItems.length === 0) {
+    setStatus("Ingen aktiv gruppe å analysere.", true);
+    return;
+  }
+
+  try {
+    setStatus("Kjører AI-vurdering ...");
+    aiScoreBtn.disabled = true;
+
+    const response = await fetch("/api/ai-score", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        rows: currentGroupItems.map((item) => ({
+          term: item.term,
+          elnummer: item.elnummer,
+          longtekst_marked: item.longtekst_marked,
+        })),
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Ukjent feil");
+    }
+
+    renderAiResults(data.results);
+    setStatus("AI-vurdering fullført.");
+  } catch (error) {
+    setStatus(`Feil ved AI-vurdering: ${error.message}`, true);
+  } finally {
+    aiScoreBtn.disabled = currentGroupItems.length === 0;
+  }
+}
+
 async function completeSelected() {
   if (!currentGroupId) {
     setStatus("Hent en gruppe først.", true);
@@ -261,7 +343,7 @@ async function completeSelected() {
   }
 
   const selectedIds = Array.from(
-    todoTbody.querySelectorAll("input[type='checkbox']:checked")
+    todoTbody.querySelectorAll("input.complete-checkbox:checked")
   ).map((checkbox) => Number(checkbox.dataset.rowId));
 
   if (selectedIds.length === 0) {
@@ -311,5 +393,6 @@ fetchNextBtn.addEventListener("click", fetchNextGroup);
 markAllBtn.addEventListener("click", markAllChecked);
 copyAllBtn.addEventListener("click", () => copyElnummer(false));
 copySelectedBtn.addEventListener("click", () => copyElnummer(true));
+aiScoreBtn.addEventListener("click", scoreActiveGroupWithAi);
 completeBtn.addEventListener("click", completeSelected);
 refreshLists();
