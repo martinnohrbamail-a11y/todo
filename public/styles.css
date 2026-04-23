@@ -82,17 +82,22 @@ table {
 
 #todoTable th:nth-child(3),
 #todoTable td:nth-child(3) {
-  width: 48%;
+  width: 42%;
 }
 
 #todoTable th:nth-child(4),
 #todoTable td:nth-child(4) {
-  width: 12%;
+  width: 8%;
 }
 
 #todoTable th:nth-child(5),
 #todoTable td:nth-child(5) {
-  width: 14%;
+  width: 10%;
+}
+
+#todoTable th:nth-child(6),
+#todoTable td:nth-child(6) {
+  width: 10%;
 }
 
 #doneTable th:nth-child(1),
@@ -192,6 +197,13 @@ mark {
   font-weight: 600;
 }
 
-.ai-results {
-  margin-top: 20px;
+.ai-score-badge {
+  display: inline-block;
+  min-width: 34px;
+  text-align: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #0d47a1;
+  font-weight: 700;
 }

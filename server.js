@@ -128,6 +128,7 @@ Hold samme rekkefølge som input.
 
   const results = Array.isArray(parsed.results) ? parsed.results : [];
   return results.map((item, index) => ({
+    rowId: rows[index]?.id ?? null,
     elnummer: String(item.elnummer ?? rows[index]?.elnummer ?? ""),
     score: Math.max(0, Math.min(100, Number(item.score) || 0)),
     begrunnelse: String(item.begrunnelse ?? ""),
@@ -251,6 +252,7 @@ app.post("/api/ai-score", async (req, res) => {
 
   try {
     const normalizedRows = rows.map((row) => ({
+      id: Number.isFinite(Number(row.id)) ? Number(row.id) : null,
       term: String(row.term ?? ""),
       elnummer: String(row.elnummer ?? ""),
       longtekst_marked: String(row.longtekst_marked ?? ""),

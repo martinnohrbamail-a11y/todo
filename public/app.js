@@ -9,13 +9,13 @@ const aiScoreBtn = document.getElementById("aiScoreBtn");
 const completeBtn = document.getElementById("completeBtn");
 const groupInfo = document.getElementById("groupInfo");
 const statusEl = document.getElementById("status");
-const aiResultsEl = document.getElementById("aiResults");
 
 const todoTbody = document.querySelector("#todoTable tbody");
 const doneTbody = document.querySelector("#doneTable tbody");
 
 let currentGroupId = null;
 let currentGroupItems = [];
+let aiScoresByRowId = new Map();
 
 function setStatus(message, isError = false) {
   statusEl.textContent = message;
@@ -140,15 +140,18 @@ function renderGroupedRows(tbody, items) {
 function renderRows(items) {
   todoTbody.innerHTML = "";
   currentGroupItems = items;
-  aiResultsEl.innerHTML = "";
 
   for (const item of items) {
     const tr = document.createElement("tr");
+    const ai = aiScoresByRowId.get(item.id);
+    const scoreValue = Number.isFinite(ai?.score) ? ai.score : "—";
+    const scoreReason = ai?.begrunnelse || "Kjør AI-score for å få begrunnelse.";
 
     tr.innerHTML = `
       <td>${escapeHtml(item.term)}</td>
       <td>${escapeHtml(item.elnummer)}</td>
       <td><div class="text-wrap">${decorateLongtekst(item.longtekst_marked)}</div></td>
+      <td><span class="ai-score-badge" title="${escapeHtml(scoreReason)}">${escapeHtml(scoreValue)}</span></td>
       <td>
         <label>
           <input
@@ -210,6 +213,7 @@ async function fetchNextGroup() {
 
     if (data.done) {
       currentGroupId = null;
+      aiScoresByRowId = new Map();
       groupInfo.textContent = "Ingen flere ubehandlede grupper.";
       renderRows([]);
       await refreshLists();
@@ -217,6 +221,7 @@ async function fetchNextGroup() {
     }
 
     currentGroupId = data.noresult_id;
+    aiScoresByRowId = new Map();
     groupInfo.textContent = `Viser noresult_id: ${data.noresult_id}`;
     renderRows(data.items);
     await refreshLists();
@@ -265,41 +270,6 @@ async function copyElnummer(onlySelected = false) {
   }
 }
 
-function renderAiResults(results) {
-  aiResultsEl.innerHTML = "";
-
-  if (!Array.isArray(results) || results.length === 0) {
-    aiResultsEl.innerHTML = "<p>Ingen AI-resultater å vise.</p>";
-    return;
-  }
-
-  const rows = results
-    .map(
-      (item) => `
-        <tr>
-          <td>${escapeHtml(item.elnummer)}</td>
-          <td>${escapeHtml(item.score)}</td>
-          <td>${escapeHtml(item.begrunnelse)}</td>
-        </tr>
-      `
-    )
-    .join("");
-
-  aiResultsEl.innerHTML = `
-    <h3>AI-vurdering</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Elnummer</th>
-          <th>Score</th>
-          <th>Begrunnelse</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
-  `;
-}
-
 async function scoreActiveGroupWithAi() {
   if (!Array.isArray(currentGroupItems) || currentGroupItems.length === 0) {
     setStatus("Ingen aktiv gruppe å analysere.", true);
@@ -315,6 +285,7 @@ async function scoreActiveGroupWithAi() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         rows: currentGroupItems.map((item) => ({
+          id: item.id,
           term: item.term,
           elnummer: item.elnummer,
           longtekst_marked: item.longtekst_marked,
@@ -327,7 +298,13 @@ async function scoreActiveGroupWithAi() {
       throw new Error(data.error || "Ukjent feil");
     }
 
-    renderAiResults(data.results);
+    aiScoresByRowId = new Map(
+      (data.results || []).map((item) => [
+        item.rowId,
+        { score: item.score, begrunnelse: item.begrunnelse },
+      ])
+    );
+    renderRows(currentGroupItems);
     setStatus("AI-vurdering fullført.");
   } catch (error) {
     setStatus(`Feil ved AI-vurdering: ${error.message}`, true);
