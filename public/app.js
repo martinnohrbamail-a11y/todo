@@ -155,7 +155,14 @@ function renderRows(items) {
       <td>${escapeHtml(item.term)}</td>
       <td>${escapeHtml(item.elnummer)}</td>
       <td><div class="text-wrap">${decorateLongtekst(item.longtekst_marked)}</div></td>
-      <td><span class="ai-score-badge" title="${escapeHtml(scoreReason)}">${escapeHtml(scoreValue)}</span></td>
+      <td>
+        <span
+          class="ai-score-badge"
+          data-tooltip="${escapeHtml(scoreReason)}"
+          aria-label="${escapeHtml(scoreReason)}"
+          tabindex="0"
+        >${escapeHtml(scoreValue)}</span>
+      </td>
       <td>
         <label>
           <input
