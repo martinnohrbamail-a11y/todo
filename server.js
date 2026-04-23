@@ -39,7 +39,7 @@ function dbError(error, fallbackMessage) {
 }
 
 async function scoreRowsWithAI(rows) {
-  const provider = (process.env.AI_PROVIDER || "copilot").toLowerCase();
+  const provider = (process.env.AI_PROVIDER || "openai").toLowerCase();
   const isCopilot = provider === "copilot";
   const apiKey = isCopilot
     ? process.env.COPILOT_API_KEY || process.env.GITHUB_TOKEN

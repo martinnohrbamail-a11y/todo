@@ -50,7 +50,7 @@ CREATE TABLE noresult_matches (
 ```bash
 cp .env.example .env
 # sett DATABASE_URL til Neon connection string
-# sett COPILOT_API_KEY (eller GITHUB_TOKEN) for AI-vurdering
+# sett OPENAI_API_KEY for AI-vurdering
 npm install
 npm start
 ```
@@ -79,9 +79,9 @@ Backend kaller valgfri AI-provider med streng vurderingslogikk og returnerer:
 
 Miljøvariabler:
 
-- `AI_PROVIDER` (`copilot` eller `openai`, default `copilot`)
+- `AI_PROVIDER` (`openai` eller `copilot`, default `openai`)
+- `OPENAI_API_KEY` (påkrevd når `AI_PROVIDER=openai`)
+- `OPENAI_MODEL` (valgfri, default `gpt-4.1-mini`)
 - `COPILOT_API_KEY` eller `GITHUB_TOKEN` (påkrevd når `AI_PROVIDER=copilot`)
 - `COPILOT_MODEL` (valgfri, default `gpt-4o-mini`)
 - `COPILOT_BASE_URL` (valgfri, default `https://models.inference.ai.azure.com`)
-- `OPENAI_API_KEY` (påkrevd når `AI_PROVIDER=openai`)
-- `OPENAI_MODEL` (valgfri, default `gpt-4.1-mini`)
