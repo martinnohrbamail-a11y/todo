@@ -33,6 +33,9 @@ Appen forventer en tabell `noresult_matches` med minst disse feltene:
 - `term` (tekst)
 - `elnummer` (tekst)
 - `behandlet` (boolean, default false)
+- `ai_score` (integer, nullable)
+- `ai_begrunnelse` (text, nullable)
+- `ai_updated_at` (timestamptz, nullable)
 
 Eksempel SQL:
 
@@ -42,7 +45,10 @@ CREATE TABLE noresult_matches (
   noresult_id integer NOT NULL,
   term text,
   elnummer text,
-  behandlet boolean DEFAULT FALSE
+  behandlet boolean DEFAULT FALSE,
+  ai_score integer,
+  ai_begrunnelse text,
+  ai_updated_at timestamptz
 );
 ```
 
@@ -66,6 +72,7 @@ Hvis du har opprettet databasen på nytt, sjekk at:
 - `DATABASE_URL` peker til riktig database.
 - `TABLE_NAME` peker til riktig tabell (default `public.noresult_matches`).
 - Tabellen har kolonnene: `id`, `noresult_id`, `term`, `elnummer`, `behandlet`, `matched_longtekst`, `longtekst_marked`.
+- For lagring av AI-resultater: `ai_score`, `ai_begrunnelse`, `ai_updated_at`.
 
 API-feil returnerer nå også `detail` og `code` fra Postgres for enklere feilsøking.
 
@@ -82,10 +89,19 @@ ALTER TABLE public.noresult_matches
 ADD COLUMN IF NOT EXISTS behandlet boolean NOT NULL DEFAULT false;
 ```
 
+For AI-lagring:
+
+```sql
+ALTER TABLE public.noresult_matches
+ADD COLUMN IF NOT EXISTS ai_score integer,
+ADD COLUMN IF NOT EXISTS ai_begrunnelse text,
+ADD COLUMN IF NOT EXISTS ai_updated_at timestamptz;
+```
+
 ## AI-vurdering (Copilot / OpenAI)
 
 Arbeidsfanen har en knapp **AI-score aktiv gruppe** som sender aktiv gruppe til backend.  
-Backend kaller valgfri AI-provider med streng vurderingslogikk og returnerer:
+Backend kaller valgfri AI-provider med streng vurderingslogikk, lagrer resultatene i tabellen, og returnerer:
 
 - Elnummer
 - Score (0-100)

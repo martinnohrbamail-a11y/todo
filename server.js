@@ -38,6 +38,17 @@ function dbError(error, fallbackMessage) {
   };
 }
 
+async function ensureAiColumnsExist() {
+  await pool.query(
+    `
+    ALTER TABLE ${tableRef}
+    ADD COLUMN IF NOT EXISTS ai_score integer,
+    ADD COLUMN IF NOT EXISTS ai_begrunnelse text,
+    ADD COLUMN IF NOT EXISTS ai_updated_at timestamptz
+    `
+  );
+}
+
 async function scoreRowsWithAI(rows) {
   const provider = (process.env.AI_PROVIDER || "openai").toLowerCase();
   const isCopilot = provider === "copilot";
@@ -171,6 +182,9 @@ app.get("/api/schema-check", async (_req, res) => {
       { name: "elnummer", types: ["text", "character varying"] },
       { name: "longtekst_marked", types: ["text", "character varying"] },
       { name: "behandlet", types: ["boolean"] },
+      { name: "ai_score", types: ["integer"] },
+      { name: "ai_begrunnelse", types: ["text", "character varying"] },
+      { name: "ai_updated_at", types: ["timestamp with time zone"] },
     ];
 
     const checks = required.map((col) => {
@@ -208,6 +222,8 @@ app.get("/api/items", async (req, res) => {
         elnummer,
         matched_longtekst,
         longtekst_marked,
+        ai_score,
+        ai_begrunnelse,
         COALESCE(behandlet, FALSE) AS behandlet
       FROM ${tableRef}
       WHERE COALESCE(behandlet, FALSE) = $1
@@ -250,6 +266,8 @@ app.get("/api/next-group", async (_req, res) => {
         elnummer,
         matched_longtekst,
         longtekst_marked,
+        ai_score,
+        ai_begrunnelse,
         COALESCE(behandlet, FALSE) AS behandlet
       FROM ${tableRef}
       WHERE noresult_id = $1
@@ -302,6 +320,8 @@ app.post("/api/ai-score", async (req, res) => {
   }
 
   try {
+    await ensureAiColumnsExist();
+
     const normalizedRows = rows.map((row) => ({
       id: String(row.id ?? ""),
       term: String(row.term ?? ""),
@@ -310,6 +330,23 @@ app.post("/api/ai-score", async (req, res) => {
     }));
 
     const results = await scoreRowsWithAI(normalizedRows);
+    await Promise.all(
+      results
+        .filter((row) => row.rowId)
+        .map((row) =>
+          pool.query(
+            `
+            UPDATE ${tableRef}
+            SET ai_score = $1,
+                ai_begrunnelse = $2,
+                ai_updated_at = NOW()
+            WHERE id = $3::int
+            `,
+            [row.score, row.begrunnelse, row.rowId]
+          )
+        )
+    );
+
     return res.json({ results });
   } catch (error) {
     console.error(error);

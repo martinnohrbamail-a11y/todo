@@ -21,6 +21,20 @@ function rowKey(value) {
   return String(value ?? "");
 }
 
+function hydrateAiScoresFromItems(items) {
+  aiScoresByRowId = new Map(
+    (items || [])
+      .filter((item) => Number.isFinite(Number(item.ai_score)))
+      .map((item) => [
+        rowKey(item.id),
+        {
+          score: Number(item.ai_score),
+          begrunnelse: String(item.ai_begrunnelse || ""),
+        },
+      ])
+  );
+}
+
 function setStatus(message, isError = false) {
   statusEl.textContent = message;
   statusEl.style.color = isError ? "#c62828" : "#1b5e20";
@@ -232,7 +246,7 @@ async function fetchNextGroup() {
     }
 
     currentGroupId = data.noresult_id;
-    aiScoresByRowId = new Map();
+    hydrateAiScoresFromItems(data.items);
     groupInfo.textContent = `Viser noresult_id: ${data.noresult_id}`;
     renderRows(data.items);
     await refreshLists();
