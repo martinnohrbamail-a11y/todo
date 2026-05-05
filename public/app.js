@@ -7,6 +7,8 @@ const copyAllBtn = document.getElementById("copyAllBtn");
 const copySelectedBtn = document.getElementById("copySelectedBtn");
 const aiScoreBtn = document.getElementById("aiScoreBtn");
 const completeBtn = document.getElementById("completeBtn");
+const saveSettingsBtn = document.getElementById("saveSettingsBtn");
+const aiInstructionsInput = document.getElementById("aiInstructionsInput");
 const groupInfo = document.getElementById("groupInfo");
 const statusEl = document.getElementById("status");
 
@@ -382,6 +384,42 @@ async function completeSelected() {
   }
 }
 
+async function loadSettings() {
+  try {
+    const response = await fetch("/api/settings");
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Ukjent feil");
+    }
+    aiInstructionsInput.value = data.aiInstructions || "";
+  } catch (error) {
+    setStatus(`Feil ved henting av innstillinger: ${error.message}`, true);
+  }
+}
+
+async function saveSettings() {
+  const aiInstructions = aiInstructionsInput.value?.trim();
+  if (!aiInstructions) {
+    setStatus("AI-prompt kan ikke være tom.", true);
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ aiInstructions }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Ukjent feil");
+    }
+    setStatus("Innstillinger lagret.");
+  } catch (error) {
+    setStatus(`Feil ved lagring av innstillinger: ${error.message}`, true);
+  }
+}
+
 function setupTabs() {
   tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
@@ -403,4 +441,6 @@ copyAllBtn.addEventListener("click", () => copyElnummer(false));
 copySelectedBtn.addEventListener("click", () => copyElnummer(true));
 aiScoreBtn.addEventListener("click", scoreActiveGroupWithAi);
 completeBtn.addEventListener("click", completeSelected);
+saveSettingsBtn.addEventListener("click", saveSettings);
 refreshLists();
+loadSettings();

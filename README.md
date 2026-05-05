@@ -23,6 +23,8 @@ En enkel app for arbeidsflyten du beskrev:
 - `GET /api/items?behandlet=true|false`: Henter full liste for valgt status.
 - `POST /api/ai-score`: AI-vurderer rader og returnerer `elnummer`, `score` og kort `begrunnelse`.
 - `GET /api/schema-check`: Verifiserer at nødvendige kolonner finnes med riktige datatyper.
+- `GET /api/settings`: Henter gjeldende AI-prompt for scoring.
+- `PUT /api/settings`: Oppdaterer AI-prompt som brukes i scoring.
 
 ## Forventet tabell
 
@@ -106,6 +108,8 @@ Backend kaller valgfri AI-provider med streng vurderingslogikk, lagrer resultate
 - Elnummer
 - Score (0-100)
 - Begrunnelse (kort)
+
+Du kan endre AI-prompt i **Innstillinger**-fanen i UI. Prompten lagres i `settings.json` på serveren og brukes i alle nye kall til `POST /api/ai-score`.
 
 Miljøvariabler:
 

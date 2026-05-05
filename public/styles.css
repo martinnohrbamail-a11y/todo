@@ -62,6 +62,18 @@ button:disabled {
   cursor: not-allowed;
 }
 
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #c7d2ea;
+  border-radius: 8px;
+  padding: 12px;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 14px;
+  line-height: 1.4;
+  resize: vertical;
+}
+
 table {
   width: 100%;
   table-layout: fixed;

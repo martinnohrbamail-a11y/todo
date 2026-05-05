@@ -1,4 +1,5 @@
 const path = require("path");
+const fs = require("fs/promises");
 const express = require("express");
 const { Pool } = require("pg");
 require("dotenv").config();
@@ -29,6 +30,49 @@ const pool = new Pool({
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
+
+const settingsFilePath = path.join(__dirname, "settings.json");
+const defaultAiInstructions = `
+Du skal analysere en tabell rad for rad.
+Felter per rad:
+- term
+- elnummer
+- longtekst_marked
+
+Vurder hvor godt longtekst_marked matcher det brukeren leter etter i term.
+Vær streng. Ved usikkerhet: trekk score ned.
+Hvis ord matcher, men produkttype er feil: svært lav score eller 0.
+Bedre for lav enn for høy score.
+
+Scoringsregler:
+- 100: svært tydelig og direkte match
+- 80-99: veldig god match med liten usikkerhet
+- 50-79: delvis relevant
+- 1-49: svak match
+- 0: feil produkt
+
+Returner KUN gyldig JSON på format:
+{
+  "results": [
+    { "elnummer": "...", "score": 0-100, "begrunnelse": "kort og konkret" }
+  ]
+}
+
+Hold samme rekkefølge som input.
+`;
+
+async function getAiInstructions() {
+  try {
+    const raw = await fs.readFile(settingsFilePath, "utf-8");
+    const parsed = JSON.parse(raw);
+    if (typeof parsed.aiInstructions === "string" && parsed.aiInstructions.trim().length > 0) {
+      return parsed.aiInstructions;
+    }
+  } catch (_error) {
+    return defaultAiInstructions;
+  }
+  return defaultAiInstructions;
+}
 
 function dbError(error, fallbackMessage) {
   return {
@@ -70,34 +114,7 @@ async function scoreRowsWithAI(rows) {
     );
   }
 
-  const instructions = `
-Du skal analysere en tabell rad for rad.
-Felter per rad:
-- term
-- elnummer
-- longtekst_marked
-
-Vurder hvor godt longtekst_marked matcher det brukeren leter etter i term.
-Vær streng. Ved usikkerhet: trekk score ned.
-Hvis ord matcher, men produkttype er feil: svært lav score eller 0.
-Bedre for lav enn for høy score.
-
-Scoringsregler:
-- 100: svært tydelig og direkte match
-- 80-99: veldig god match med liten usikkerhet
-- 50-79: delvis relevant
-- 1-49: svak match
-- 0: feil produkt
-
-Returner KUN gyldig JSON på format:
-{
-  "results": [
-    { "elnummer": "...", "score": 0-100, "begrunnelse": "kort og konkret" }
-  ]
-}
-
-Hold samme rekkefølge som input.
-`;
+  const instructions = await getAiInstructions();
 
   const response = await fetch(`${baseUrl}/v1/chat/completions`, {
     method: "POST",
@@ -206,6 +223,29 @@ app.get("/api/schema-check", async (_req, res) => {
     });
   } catch (error) {
     return res.status(500).json(dbError(error, "Klarte ikke kjøre schema-check"));
+  }
+});
+
+app.get("/api/settings", async (_req, res) => {
+  const aiInstructions = await getAiInstructions();
+  res.json({ aiInstructions });
+});
+
+app.put("/api/settings", async (req, res) => {
+  const aiInstructions = req.body?.aiInstructions;
+  if (typeof aiInstructions !== "string" || aiInstructions.trim().length === 0) {
+    return res.status(400).json({ error: "aiInstructions må være en ikke-tom tekst" });
+  }
+
+  try {
+    await fs.writeFile(
+      settingsFilePath,
+      JSON.stringify({ aiInstructions }, null, 2),
+      "utf-8"
+    );
+    return res.json({ ok: true });
+  } catch (error) {
+    return res.status(500).json(dbError(error, "Klarte ikke lagre innstillinger"));
   }
 });
 

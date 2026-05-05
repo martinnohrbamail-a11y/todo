@@ -13,6 +13,7 @@
       <div class="tabs">
         <button class="tab active" data-tab="workTab">Arbeidsfane (ikke behandlet)</button>
         <button class="tab" data-tab="doneTab">Ferdig behandlet</button>
+        <button class="tab" data-tab="settingsTab">Innstillinger</button>
       </div>
 
       <section id="workTab" class="tab-panel active">
@@ -60,6 +61,16 @@
           </thead>
           <tbody></tbody>
         </table>
+      </section>
+
+      <section id="settingsTab" class="tab-panel">
+        <h3>Innstillinger for AI-score</h3>
+        <p>Rediger prompten som brukes i AI-vurdering.</p>
+        <label for="aiInstructionsInput">AI-prompt</label>
+        <textarea id="aiInstructionsInput" rows="16"></textarea>
+        <div class="actions">
+          <button id="saveSettingsBtn">Lagre innstillinger</button>
+        </div>
       </section>
 
       <p id="status"></p>
